@@ -22,6 +22,7 @@ import filecmp
 from datetime import datetime, timedelta
 import re
 import locale
+import codecs
 
 
 # Setting locale to the 'local' value
@@ -188,6 +189,7 @@ class ExifTool(object):
     def __init__(self, executable=exiftool_location, verbose=False):
         self.executable = executable
         self.verbose = verbose
+        self.decoder = codecs.getincrementaldecoder('utf-8')()
 
     def __enter__(self):
         self.process = subprocess.Popen(
@@ -206,10 +208,10 @@ class ExifTool(object):
         output = ""
         fd = self.process.stdout.fileno()
         while not output.rstrip(' \t\n\r').endswith(self.sentinel):
-            increment = os.read(fd, 4096)
+            increment = self.decoder.decode(os.read(fd, 4096))
             if self.verbose:
-                sys.stdout.write(increment.decode('utf-8'))
-            output += increment.decode('utf-8')
+                sys.stdout.write(increment)
+            output += increment
         return output.rstrip(' \t\n\r')[:-len(self.sentinel)]
 
     def get_metadata(self, *args):
